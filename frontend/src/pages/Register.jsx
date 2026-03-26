@@ -6,6 +6,8 @@ const Register = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("OFFICER");
+  const [name, setName] = useState("");
+  const [badgeNumber, setBadgeNumber] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +19,12 @@ const Register = () => {
     setSuccess("");
     setLoading(true);
     try {
-      await api.post('/auth/register', { username, password, role });
+      await api.post('/auth/register', { 
+        username, 
+        password, 
+        role,
+        ...(role === 'OFFICER' && { name, badge_number: badgeNumber }) 
+      });
       setSuccess("Account created successfully. Redirecting to login...");
       setTimeout(() => {
          navigate("/login");
@@ -72,6 +79,34 @@ const Register = () => {
                 <option value="ADMIN">System Admin</option>
               </select>
             </div>
+            
+            {role === 'OFFICER' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1.5">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all shadow-sm"
+                    placeholder="Officer Name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1.5">Badge Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={badgeNumber}
+                    onChange={(e) => setBadgeNumber(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all shadow-sm uppercase font-mono"
+                    placeholder="B-1234"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-1.5">Username</label>
               <input

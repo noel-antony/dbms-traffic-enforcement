@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AddViolation from './pages/AddViolation';
+import AddVehicle from './pages/AddVehicle';
+import AddOwner from './pages/AddOwner';
 import Vehicles from './pages/Vehicles';
 import VehicleDetails from './pages/VehicleDetails';
 import Payments from './pages/Payments';
@@ -32,8 +34,16 @@ function App() {
               element={<ProtectedRoute allowedRoles={['ADMIN', 'OFFICER']}><Owners /></ProtectedRoute>} 
             />
             <Route 
+              path="owners/new" 
+              element={<ProtectedRoute allowedRoles={['ADMIN', 'OFFICER']}><AddOwner /></ProtectedRoute>} 
+            />
+            <Route 
               path="vehicles" 
               element={<ProtectedRoute allowedRoles={['ADMIN', 'OFFICER']}><Vehicles /></ProtectedRoute>} 
+            />
+            <Route 
+              path="vehicles/new" 
+              element={<ProtectedRoute allowedRoles={['ADMIN', 'OFFICER']}><AddVehicle /></ProtectedRoute>} 
             />
             <Route 
               path="vehicles/:id" 

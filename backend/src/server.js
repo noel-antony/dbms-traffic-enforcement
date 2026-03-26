@@ -37,21 +37,36 @@ app.get('/health', apiLimiter, async (_req, res) => {
 });
 
 app.post('/api/auth/register', async (req, res) => {
-  const { username, password, role = 'CLERK' } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'username and password are required' });
-  }
+    const { username, password, role = 'CLERK', name, badge_number, assigned_area } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'username and password are required' });
+    }
 
-  try {
-    const passwordHash = await hashPassword(password);
-    const result = await pool.query(
-      'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING user_id, username, role',
-      [username, passwordHash, role],
-    );
-    return res.status(201).json(result.rows[0]);
-  } catch (error) {
-    return res.status(400).json({ error: error.message });
-  }
+    try {
+      const passwordHash = await hashPassword(password);
+      const result = await pool.query(
+        'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING user_id, username, role',
+        [username, passwordHash, role],
+      );
+      
+      const newUser = result.rows[0];
+
+      // Auto-create an officer profile if the role is OFFICER so the IDs match
+      if (role === 'OFFICER') {
+        const officerName = name || username;
+        const officerBadge = badge_number || `BADGE-${newUser.user_id}`;
+        const officerArea = assigned_area || 'Unassigned';
+        
+        await pool.query(
+          'INSERT INTO officer (officer_id, name, badge_number, assigned_area) VALUES ($1, $2, $3, $4)',
+          [newUser.user_id, officerName, officerBadge, officerArea]
+        );
+      }
+
+      return res.status(201).json(newUser);
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -100,6 +115,22 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+app.get('/api/fines-extended', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT f.*, v.vehicle_id, vh.registration_number
+      FROM fine f
+      JOIN violation v ON f.violation_id = v.violation_id
+      JOIN vehicle vh ON v.vehicle_id = vh.vehicle_id
+      WHERE f.fine_id NOT IN (SELECT fine_id FROM payment)
+      ORDER BY f.issued_date DESC
+    `);
+    return res.json(result.rows);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/:resource', async (req, res) => {
   const config = resources[req.params.resource];
   if (!config) {
@@ -138,13 +169,6 @@ app.post('/api/:resource', async (req, res) => {
   }
 
   const payload = req.body || {};
-  
-  // SECURE: Automatically assign the submitting user as the officer
-  if (req.params.resource === 'violations' && req.user) {
-    // Note: Assuming `req.user.user_id` corresponds to the `officer_id` in a 1:1 scheme,
-    // or just inject it so the frontend doesn't need to specify it.
-    payload.officer_id = req.user.user_id;
-  }
 
   const keys = config.fields.filter((field) => Object.prototype.hasOwnProperty.call(payload, field));
 
@@ -162,6 +186,8 @@ app.post('/api/:resource', async (req, res) => {
     );
     return res.status(201).json(result.rows[0]);
   } catch (error) {
+    console.error(`Error inserting into ${config.table}:`, error.message);
+    console.error('Payload:', payload);
     return res.status(400).json({ error: error.message });
   }
 });

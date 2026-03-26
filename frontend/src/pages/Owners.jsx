@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import api from "../services/api";
 
 const Owners = () => {
@@ -29,20 +30,25 @@ const Owners = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/60 backdrop-blur-lg p-5 rounded-xl shadow-md border border-white/60 gap-4">
         <h1 className="text-xl font-bold text-slate-800">Vehicle Owners</h1>
-        <div className="relative w-full sm:w-72">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-72">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input 
+              type="text" 
+              placeholder="Search name or license..."
+              className="w-full pr-4 py-2.5 bg-white/80 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all shadow-sm text-sm"
+              style={{ paddingLeft: "3.2rem" }}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <input 
-            type="text" 
-            placeholder="Search name or license..."
-            className="w-full pr-4 py-2.5 bg-white/80 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all shadow-sm text-sm"
-            style={{ paddingLeft: "3.2rem" }}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <Link to="/owners/new" className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg shadow-md transition-all whitespace-nowrap">
+            + New Owner
+          </Link>
         </div>
       </div>
 

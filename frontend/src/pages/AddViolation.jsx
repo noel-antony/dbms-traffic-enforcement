@@ -1,34 +1,50 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const AddViolation = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [types, setTypes] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [officers, setOfficers] = useState([]);
   const [formData, setFormData] = useState({
     vehicle_id: "",
+    officer_id: "",
     violation_type_id: "",
     location: "",
     description: ""
   });
 
-  // Since officer_id is required, assume user has ID or use dummy 1
   useEffect(() => {
-    const fetchTypes = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get('/violation-types');
-        setTypes(response.data);
+        const [typesResponse, vehiclesResponse, officersResponse] = await Promise.all([
+          api.get('/violation-types'),
+          api.get('/vehicles'),
+          api.get('/officers')
+        ]);
+        setTypes(typesResponse.data);
+        setVehicles(vehiclesResponse.data);
+        setOfficers(officersResponse.data);
+        
+        // If logged in user is an officer, set the officer_id automatically
+        if (user && user.role === 'OFFICER' && user.user_id) {
+          setFormData(prev => ({...prev, officer_id: parseInt(user.user_id, 10)}));
+        }
       } catch (err) {
-        console.error("Failed to load violation types", err);
+        console.error("Failed to load data", err);
       }
     };
-    fetchTypes();
-  }, []);
+    fetchData();
+  }, [user]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+      e.preventDefault();
+      if (!formData.officer_id) { alert('Please select an issuing officer.'); return; }
+      setLoading(true);
     try {
       await api.post('/violations', {
         ...formData,
@@ -59,15 +75,20 @@ const AddViolation = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <label className="text-sm font-semibold text-slate-700">Vehicle ID</label>
-                        <input 
+                        <label className="text-sm font-semibold text-slate-700">Vehicle (Registration)</label>
+                        <select 
                             required
-                            type="number" 
-                            placeholder="e.g. 1"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all font-mono uppercase"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-slate-700 font-mono uppercase"
                             value={formData.vehicle_id}
                             onChange={(e) => setFormData({...formData, vehicle_id: parseInt(e.target.value, 10)})}
-                        />
+                        >
+                            <option value="" disabled>Select vehicle...</option>
+                            {vehicles.map(v => (
+                                <option key={v.vehicle_id} value={v.vehicle_id}>
+                                    {v.registration_number}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">Violation Type</label>
@@ -85,22 +106,40 @@ const AddViolation = () => {
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">Location of Incident</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-slate-700">Location of Incident</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            </div>
+                            <input 
+                                required
+                                type="text" 
+                                placeholder="Street name, Intersection, etc."
+                                className="w-full pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-sm"
+                                style={{ paddingLeft: "3.2rem" }}
+                                value={formData.location}
+                                onChange={(e) => setFormData({...formData, location: e.target.value})}
+                            />
                         </div>
-                        <input 
-                            required
-                            type="text" 
-                            placeholder="Street name, Intersection, etc."
-                            className="w-full pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-sm"
-                            style={{ paddingLeft: "3.2rem" }}
-                            value={formData.location}
-                            onChange={(e) => setFormData({...formData, location: e.target.value})}
-                        />
                     </div>
+                    {user?.role === 'ADMIN' && (
+                      <div className="space-y-2">
+                          <label className="text-sm font-semibold text-slate-700">Issuing Officer</label>
+                          <select
+                              required
+                              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition-all text-slate-700"
+                              value={formData.officer_id}
+                              onChange={(e) => setFormData({...formData, officer_id: parseInt(e.target.value, 10)})}
+                          >
+                              <option value="" disabled>Select officer...</option>
+                              {officers.map(o => (
+                                <option key={o.officer_id} value={o.officer_id}>{o.name} ({o.badge_number})</option>
+                              ))}
+                          </select>
+                      </div>
+                    )}
                 </div>
 
                 <div className="space-y-2">

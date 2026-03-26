@@ -10,7 +10,7 @@ const Payments = () => {
   useEffect(() => {
     const fetchFines = async () => {
       try {
-        const response = await api.get('/fines');
+        const response = await api.get('/fines-extended');
         setFines(response.data);
       } catch (err) {
         console.error("Failed to load fines", err);
@@ -77,7 +77,7 @@ const Payments = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-sm">
-                        V-{fine.vehicle_id || 'Unknown'}
+                        {fine.registration_number || 'Unknown'}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-black text-slate-800 text-lg">${parseFloat(fine.amount).toFixed(2)}</td>
@@ -129,7 +129,7 @@ const Payments = () => {
               </div>
               <div className="flex justify-between items-center px-2">
                 <span className="text-sm text-slate-500">Vehicle</span>
-                <span className="text-sm font-bold text-slate-700">{selectedFine.vehicle_id || 'Unknown'}</span>
+                <span className="text-sm font-bold text-slate-700">{selectedFine.registration_number || 'Unknown'}</span>
               </div>
             </div>
 
